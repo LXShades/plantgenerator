@@ -30,6 +30,5 @@ public class PlantGeneratorEditor : Editor {
             generator.editablePoints[i] = Handles.DoPositionHandle(generator.editablePoints[i], Quaternion.identity);
         }
 
-        generator.doRegenerate = !generator.doRegenerate;
     }
 }

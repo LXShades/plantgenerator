@@ -47,6 +47,7 @@ public class PlantGenerator : MonoBehaviour {
 
         // and a petal, for good measure
         Vector3 s = editablePoints.Length > 0 ? editablePoints[0] : Vector3.zero, e = editablePoints.Length > 1 ? editablePoints[1] : Vector3.zero;
+        new GenShoot(Vector3.zero, s - Vector3.zero, 0.3f, 12).Generate(mesh);
         new GenPetal(s, e - s, 0.3f, petalCurve, 128).Generate(mesh);
 
         // Copy the GenMesh contents to the mesh
@@ -76,16 +77,27 @@ public class GenMesh
 
     public void AddElements(Vector3[] vertices, int[] triangles, Color32[] colors)
     {
-        // Offset the vertex indices to append the new triangles correctly
-        for (int i = 0; i < triangles.Length; i++)
+        // Append the elements!
+        if (vertices != null)
         {
-            triangles[i] += this.vertices.Count;
+            this.vertices.AddRange(vertices);
         }
 
-        // Append the elements!
-        this.vertices.AddRange(vertices);
-        this.triangles.AddRange(triangles);
-        this.colors.AddRange(colors);
+        if (colors != null)
+        {
+            this.colors.AddRange(colors);
+        }
+
+        if (triangles != null)
+        {
+            // Offset the vertex indices to append the new triangles correctly
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                triangles[i] += this.vertices.Count;
+            }
+
+            this.triangles.AddRange(triangles);
+        }
     }
     
     public void ApplyToMesh(Mesh mesh)
@@ -93,6 +105,26 @@ public class GenMesh
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.colors32 = colors.ToArray();
+    }
+
+    public void TriangulateLadder(int ladderStartVertex, int ladderNumVerts, bool doFlip)
+    {
+        int[] triangles = new int[ladderNumVerts / 2 * 6];
+        int numCreatedIndices = 0;
+        for (int quad = 0; quad < ladderNumVerts / 2; quad++)
+        {
+            int baseline = quad * 2;
+
+            triangles[numCreatedIndices + 0] = (baseline + 0) % ladderNumVerts;
+            triangles[numCreatedIndices + 1] = (baseline + 2) % ladderNumVerts;
+            triangles[numCreatedIndices + 2] = (baseline + 1) % ladderNumVerts;
+            triangles[numCreatedIndices + 3] = (baseline + 2) % ladderNumVerts;
+            triangles[numCreatedIndices + 4] = (baseline + 3) % ladderNumVerts;
+            triangles[numCreatedIndices + 5] = (baseline + 1) % ladderNumVerts;
+            numCreatedIndices += 6;
+        }
+
+        AddElements(null, triangles, null);
     }
 }
 
@@ -104,12 +136,12 @@ public class GenShoot
     float radius;
     int numRadialVertices;
 
-    public GenShoot(Vector3 start, Vector3 direction, float radius = 1, int numLengthVertices = 8)
+    public GenShoot(Vector3 start, Vector3 direction, float radius = 1, int numRadialVertices = 8)
     {
         this.start = start;
         this.direction = direction;
         this.radius = radius;
-        this.numRadialVertices = numLengthVertices;
+        this.numRadialVertices = numRadialVertices;
     }
 
     public void Generate(GenMesh mesh)
@@ -156,7 +188,7 @@ public class GenShoot
         }
 
         // Add them to the mesh
-        mesh.AddElements(radialVerts, triangles, radialVertColours);
+        mesh.AddElements(radialVerts, null, radialVertColours);
     }
 }
 
@@ -168,13 +200,13 @@ public class GenPetal
     AnimationCurve outline;
     int numLengthVertices = 0;
 
-    public GenPetal(Vector3 start, Vector3 direction, float radius, AnimationCurve outline, int numRadialVertices)
+    public GenPetal(Vector3 start, Vector3 direction, float radius, AnimationCurve outline, int numLengthVertices)
     {
         this.start = start;
         this.direction = direction;
         this.radius = radius;
         this.outline = outline;
-        this.numLengthVertices = (numRadialVertices + 1) / 2 * 2; // temp: numRadialVertices should be even for now
+        this.numLengthVertices = (numLengthVertices + 1) / 2 * 2; // temp: numRadialVertices should be even for now
     }
 
     public void Generate(GenMesh mesh)
@@ -209,12 +241,12 @@ public class GenPetal
         {
             int baseline = quad * 2;
 
-            triangles[numCreatedIndices + 0] = (baseline + 1) % numLengthVertices;
+            triangles[numCreatedIndices + 2] = (baseline + 1) % numLengthVertices;
             triangles[numCreatedIndices + 1] = (baseline + 0) % numLengthVertices;
-            triangles[numCreatedIndices + 2] = (baseline + 2) % numLengthVertices;
-            triangles[numCreatedIndices + 3] = (baseline + 1) % numLengthVertices;
+            triangles[numCreatedIndices + 0] = (baseline + 2) % numLengthVertices;
+            triangles[numCreatedIndices + 5] = (baseline + 1) % numLengthVertices;
             triangles[numCreatedIndices + 4] = (baseline + 2) % numLengthVertices;
-            triangles[numCreatedIndices + 5] = (baseline + 3) % numLengthVertices;
+            triangles[numCreatedIndices + 3] = (baseline + 3) % numLengthVertices;
             numCreatedIndices += 6;
         }
 
