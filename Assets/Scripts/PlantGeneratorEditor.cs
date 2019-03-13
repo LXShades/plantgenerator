@@ -18,6 +18,13 @@ public class PlantGeneratorEditor : Editor {
 		
 	}
 
+    override public void OnInspectorGUI()
+    {
+        PlantGenerator generator = target as PlantGenerator;
+
+        base.OnInspectorGUI();
+    }
+
     // Renders any editable points in the plant generator
     void OnSceneGUI()
     {
@@ -27,7 +34,7 @@ public class PlantGeneratorEditor : Editor {
         {
             // Render each piont with a purple handle
             Handles.color = new Color(1.0f, 0.0f, 1.0f, 0.1f);
-            generator.editablePoints[i] = Handles.DoPositionHandle(generator.editablePoints[i], Quaternion.identity);
+            generator.editablePoints[i] = generator.transform.InverseTransformPoint(Handles.DoPositionHandle(generator.transform.TransformPoint(generator.editablePoints[i]), Quaternion.identity));
         }
 
     }
