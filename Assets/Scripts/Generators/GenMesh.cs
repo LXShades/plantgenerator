@@ -79,6 +79,7 @@ public class GenMesh
         Validate();
 
         // Copy over to unity-compatible mesh
+        mesh.Clear();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.colors32 = colors.ToArray();
@@ -94,8 +95,11 @@ public class GenMesh
     /// <param name="doFlip">Whether to reverse the order of of vertices</param>
     public void TriangulateLadder(int ladderStartVertex, int ladderNumVerts, bool doFlip)
     {
+        // Preallocate the triangles
         int[] triangles = new int[ladderNumVerts / 2 * 6];
         int numCreatedIndices = 0;
+
+        // Traverse the ladder, creating quads around it
         for (int quad = 0; quad < ladderNumVerts / 2; quad++)
         {
             int baseline = quad * 2;
@@ -109,7 +113,41 @@ public class GenMesh
             numCreatedIndices += 6;
         }
 
-        AddElements(null, triangles, null);
+        // Add to the triangle list
+        this.triangles.AddRange(triangles);
+    }
+
+    public void TriangulateRings(int ringStartVertex, int verticesPerRing, int numRings, bool doFlip)
+    {
+        // We can't connect just one ring to itself!
+        if (numRings <= 1)
+        {
+            return;
+        }
+
+        // Triangulate the gaps between the rings
+        int[] triangles = new int[verticesPerRing * (numRings - 1) * 6];
+        int numCreatedIndices = 0;
+        for (int quad = 0; quad < numRings - 1; quad++)
+        {
+            int baseVertex = quad * verticesPerRing;
+
+            for (int v = 0; v < verticesPerRing; v++)
+            {
+                // Join this side of the ring to this side of the next ring
+                triangles[numCreatedIndices + 0] = baseVertex + v;
+                triangles[numCreatedIndices + 1] = baseVertex + ((v + 1) % verticesPerRing);
+                triangles[numCreatedIndices + 2] = baseVertex + v + verticesPerRing;
+                triangles[numCreatedIndices + 3] = baseVertex + ((v + 1) % verticesPerRing);
+                triangles[numCreatedIndices + 4] = baseVertex + verticesPerRing + ((v + 1) % verticesPerRing);
+                triangles[numCreatedIndices + 5] = baseVertex + verticesPerRing + v;
+                
+                numCreatedIndices += 6;
+            }
+        }
+
+        // Add them to the main triangle list
+        this.triangles.AddRange(triangles);
     }
 
     /// <summary>

@@ -8,29 +8,42 @@ public class GenTube : GenMesh
 {
     public Vector3 start;
     public Vector3 direction;
-    float radius;
-    int numRadialVertices;
-    AnimationCurve tubeCurve;
+    public float radius = 1;
+    public int numRadialVertices = 8;
+    public int numSegmentVertices = 2;
 
-    public GenTube(Vector3 start, Vector3 direction, float radius = 1, int numRadialVertices = 8, AnimationCurve tubeCurve = null)
+    /// <summary>
+    /// Curve representing the width of the tube over height
+    /// </summary>
+    public AnimationCurve widthCurve = AnimationCurve.Constant(0, 1, 1);
+
+    /// <summary>
+    /// Curve representing the length of the tube over height
+    /// </summary>
+    public AnimationCurve lengthCurve = AnimationCurve.Linear(0, 0, 1, 1);
+
+    /// <summary>
+    /// Curve along the forward axis over height
+    /// </summary>
+    public AnimationCurve upCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
+
+    /// <summary>
+    /// Curve that determines the horizontal angle of the forward axis over height
+    /// </summary>
+    public AnimationCurve spiralCurve = AnimationCurve.Constant(0, 1, 0);
+
+    public GenTube(Vector3 start, Vector3 direction)
     {
         this.start = start;
         this.direction = direction;
-        this.radius = radius;
-        this.numRadialVertices = numRadialVertices;
-
-        if (tubeCurve != null)
-        {
-            this.tubeCurve = tubeCurve;
-        }
-        else
-        {
-            this.tubeCurve = AnimationCurve.Constant(0.0f, 1.0f, 1.0f);
-        }
     }
 
     protected override void OnRegenerate()
     {
+        // Validate the parameters
+        numSegmentVertices = Mathf.Max(numSegmentVertices, 2);
+        numRadialVertices = Mathf.Max(numRadialVertices, 2);
+
         // Get up and right vectors
         // todo: fix for shoots going straight up or straight down
         Vector3 up = direction - start;
@@ -38,41 +51,37 @@ public class GenTube : GenMesh
         Vector3 forward = Vector3.Cross(up, right).normalized;
 
         // Create a cylinder of vertices
-        vertices = new List<Vector3>(new Vector3[numRadialVertices * 2]);
-        colors = new List<Color32>(new Color32[numRadialVertices * 2]);
+        vertices = new List<Vector3>(new Vector3[numRadialVertices * numSegmentVertices]);
+        colors = new List<Color32>(new Color32[numRadialVertices * numSegmentVertices]);
+        triangles.Clear();
 
         int numCreatedVerts = 0;
-        float angle = 0;
         Color32 baseColor = new Color32(0, 0, 255, 255);
         Color32 extColor = new Color32(0, 255, 255, 255);
 
-        for (numCreatedVerts = 0; numCreatedVerts < numRadialVertices * 2;)
+        // Create segments
+        for (int segment = 0; segment < numSegmentVertices; segment++)
         {
-            Vector3 radiusOffset = forward * Mathf.Sin(angle) + right * Mathf.Cos(angle);
+            float segmentProgress = (float)segment / (float)(numSegmentVertices - 1);
+            up = (direction - start) * segmentProgress + forward * upCurve.Evaluate(segmentProgress);
 
-            vertices[numCreatedVerts] = this.start + radiusOffset * (radius * tubeCurve.Evaluate(0.0f));
-            vertices[numCreatedVerts + 1] = this.start + up + radiusOffset * (radius * tubeCurve.Evaluate(1.0f));
-            colors[numCreatedVerts] = baseColor;
-            colors[numCreatedVerts + 1] = extColor;
-            numCreatedVerts += 2;
+            // Create the circle for this segment
+            Vector3 segmentCentre = start + up;
 
-            angle += 2.0f * Mathf.PI / (float)numRadialVertices;
+            for (int radial = 0; radial < numRadialVertices; radial++)
+            {
+                float angle = Mathf.PI * 2.0f * (float)radial / (float)numRadialVertices;
+                // RadiusOffset is the direction perpendicular to the tube's up vector for this vertex
+                Vector3 radiusOffset = forward * (Mathf.Sin(angle) * widthCurve.Evaluate(segmentProgress)) + right * (Mathf.Cos(angle) * lengthCurve.Evaluate(segmentProgress));
+
+                // Add the radial vertex
+                vertices[numCreatedVerts] = segmentCentre + radiusOffset * radius;
+                colors[numCreatedVerts] = Color32.Lerp(baseColor, extColor, segmentProgress);
+                numCreatedVerts++;
+            }
         }
 
         // Connect them
-        triangles = new List<int>(new int[numCreatedVerts / 2 * 6]);
-        int numCreatedIndices = 0;
-        for (int quad = 0; quad < numCreatedVerts / 2; quad++)
-        {
-            int baseline = quad * 2;
-
-            triangles[numCreatedIndices + 0] = (baseline + 0) % numCreatedVerts;
-            triangles[numCreatedIndices + 1] = (baseline + 2) % numCreatedVerts;
-            triangles[numCreatedIndices + 2] = (baseline + 1) % numCreatedVerts;
-            triangles[numCreatedIndices + 3] = (baseline + 2) % numCreatedVerts;
-            triangles[numCreatedIndices + 4] = (baseline + 3) % numCreatedVerts;
-            triangles[numCreatedIndices + 5] = (baseline + 1) % numCreatedVerts;
-            numCreatedIndices += 6;
-        }
+        TriangulateRings(0, numRadialVertices, numSegmentVertices, false);
     }
 }
