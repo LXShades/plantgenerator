@@ -30,7 +30,7 @@ public class GenTube : GenMesh
     /// <summary>
     /// Curve that determines the horizontal angle of the forward axis over height
     /// </summary>
-    public AnimationCurve spiralCurve = AnimationCurve.Constant(0, 1, 0);
+    public AnimationCurve twistCurve = AnimationCurve.Constant(0, 1, 0);
 
     public GenTube(Vector3 start, Vector3 direction)
     {
@@ -63,7 +63,9 @@ public class GenTube : GenMesh
         for (int segment = 0; segment < numSegmentVertices; segment++)
         {
             float segmentProgress = (float)segment / (float)(numSegmentVertices - 1);
-            up = (direction - start) * segmentProgress + forward * upCurve.Evaluate(segmentProgress);
+            float twistAngle = twistCurve.Evaluate(segmentProgress) * Mathf.PI * 2.0f;
+            up = (direction - start) * segmentProgress
+                + (Mathf.Cos(twistAngle) * forward + Mathf.Sin(twistAngle) * right) * upCurve.Evaluate(segmentProgress);
 
             // Create the circle for this segment
             Vector3 segmentCentre = start + up;

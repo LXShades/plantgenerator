@@ -17,6 +17,7 @@ public class PlantGenerator : MonoBehaviour {
     public AnimationCurve upCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     public AnimationCurve widthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     public AnimationCurve lengthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+    public AnimationCurve twistCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
 
     // FOR EASE OF USE: A bool that actually regenerates the mesh whenever you click it. May be removed later
     public bool doRegenerate    = true;
@@ -59,7 +60,8 @@ public class PlantGenerator : MonoBehaviour {
             widthCurve = widthCurve,
             lengthCurve = lengthCurve,
             upCurve = upCurve,
-            numSegmentVertices = 8,
+            twistCurve = twistCurve,
+            numSegmentVertices = 64,
         };
         mesh += new GenSymmetrise(new GenPetal(s, e - s, 0.3f, petalCurve, 128), 8, s, Vector3.up);
         
