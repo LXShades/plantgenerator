@@ -13,12 +13,19 @@ public class PlantGenerator : MonoBehaviour {
     public Mesh generatedMesh;
     
     // Temp: A curve for petals
+    [Header("Petals")]
     public AnimationCurve petalCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+
+    [Header("Trunk")]
     public AnimationCurve upCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     public AnimationCurve widthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     public AnimationCurve lengthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     public AnimationCurve twistCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
 
+    public int numSegments = 8;
+    public float radius = 0.3f;
+
+    [Header("Internal")]
     // FOR EASE OF USE: A bool that actually regenerates the mesh whenever you click it. May be removed later
     public bool doRegenerate    = true;
     private bool lastRegenerate = false;
@@ -36,6 +43,7 @@ public class PlantGenerator : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+#if UNITY_EDITOR
         // todo remove this
         doRegenerate = !doRegenerate;
 		if (doRegenerate != lastRegenerate)
@@ -44,7 +52,11 @@ public class PlantGenerator : MonoBehaviour {
 
             lastRegenerate = doRegenerate;
         }
-	}
+
+        // The gizmo should respect the base of the plant
+        Tools.pivotMode = PivotMode.Pivot;
+#endif
+    }
 
     // Regenerates the mesh from the ground up
     void Regenerate()
@@ -56,12 +68,12 @@ public class PlantGenerator : MonoBehaviour {
         Vector3 s = editablePoints.Length > 0 ? editablePoints[0] : Vector3.zero, e = editablePoints.Length > 1 ? editablePoints[1] : Vector3.zero;
         mesh += new GenTube(Vector3.zero, s - Vector3.zero)
         {
-            radius = 0.3f,
+            radius = radius,
             widthCurve = widthCurve,
             lengthCurve = lengthCurve,
             upCurve = upCurve,
             twistCurve = twistCurve,
-            numSegmentVertices = 64,
+            numSegmentVertices = numSegments,
         };
         mesh += new GenSymmetrise(new GenPetal(s, e - s, 0.3f, petalCurve, 128), 8, s, Vector3.up);
         
